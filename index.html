@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TradeBot AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080a0d;--bg2:#0f1117;--bg3:#161a22;--bg4:#1c2130;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --text:#dde1ec;--muted:#525c72;--soft:#8892a4;
+  --green:#05d98c;--green-dim:rgba(5,217,140,0.12);--green-glow:rgba(5,217,140,0.25);
+  --red:#f03d68;--red-dim:rgba(240,61,104,0.12);
+  --amber:#f0a500;--amber-dim:rgba(240,165,0,0.12);
+  --blue:#4b8cff;--blue-dim:rgba(75,140,255,0.12);
+  --violet:#9b6dff;--violet-dim:rgba(155,109,255,0.12);
+  --syne:'Syne',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:10px;--r2:16px
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--syne);font-size:14px;display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+.hdr{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;z-index:10}
+.hdr-logo{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.hdr-logo em{color:var(--green);font-style:normal}
+.hdr-pill{font-size:9px;font-family:var(--mono);color:var(--muted);border:1px solid var(--border);padding:3px 7px;border-radius:20px;letter-spacing:.06em}
+.hdr-lot{margin-left:auto;font-size:9px;font-family:var(--mono);background:var(--violet-dim);color:var(--violet);border:1px solid rgba(155,109,255,.2);padding:4px 9px;border-radius:20px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex:1;overflow:hidden;position:relative}
+
+/* ── DESKTOP SIDEBAR ── */
+.sidebar{width:300px;min-width:300px;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.pane{padding:14px;border-bottom:1px solid var(--border)}
+.pane-title{font-size:8px;font-family:var(--mono);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:11px}
+
+/* ── UPLOAD ── */
+.dropzone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:20px 12px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3);display:flex;flex-direction:column;align-items:center;gap:6px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.dropzone:hover,.dropzone:active,.dropzone.drag{border-color:var(--green);background:var(--green-dim)}
+.dz-icon{width:34px;height:34px;border:1px solid var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
+.dz-icon svg{width:16px;height:16px}
+.dz-title{font-size:12px;font-weight:600}
+.dz-sub{font-size:10px;color:var(--muted)}
+.prev-img{width:100%;border-radius:var(--r);border:1px solid var(--border2);margin-top:11px;max-height:140px;object-fit:cover;display:block}
+.change-btn{width:100%;margin-top:7px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--soft);padding:6px;font-size:11px;cursor:pointer;font-family:var(--syne);display:none}
+.change-btn:hover{border-color:var(--border2);color:var(--text)}
+
+/* ── FORM ELEMENTS ── */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+.field-lbl{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+select,input[type=number],input[type=text]{
+  width:100%;background:var(--bg3);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);padding:9px 10px;
+  font-size:12px;font-family:var(--syne);outline:none;
+  transition:border-color .15s;-webkit-appearance:none;min-height:38px
+}
+select:focus,input:focus{border-color:var(--blue)}
+option{background:#1a1e2a}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ── ACCOUNT PREVIEW ── */
+.acc-strip{background:var(--violet-dim);border:1px solid rgba(155,109,255,.15);border-radius:var(--r);padding:10px 12px;margin-top:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.as-item{text-align:center}
+.as-val{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--violet)}
+.as-lbl{font-size:8px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── ANALYZE BTN ── */
+.abtn{width:100%;padding:13px;background:var(--green);color:#020f08;border:none;border-radius:var(--r);font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px}
+.abtn:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 8px 20px var(--green-glow)}
+.abtn:active:not(:disabled){transform:translateY(0)}
+.abtn:disabled{background:var(--bg4);color:var(--muted);cursor:not-allowed;box-shadow:none}
+.spin{width:13px;height:13px;border:2px solid rgba(0,0,0,.3);border-top-color:#020f08;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── MAIN CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:20px;background:var(--bg)}
+
+/* ── EMPTY ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:12px;color:var(--muted);padding:20px}
+.empty svg{opacity:.1}
+.empty p{font-size:12px;max-width:240px;line-height:1.8;color:var(--soft)}
+
+/* ── LOADING ── */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px}
+.lspin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:sp .9s linear infinite}
+.ltxt{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.ldots::after{content:'';animation:ld 1.5s infinite}
+@keyframes ld{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
+
+/* ── ERROR ── */
+.ebox{background:var(--red-dim);border:1px solid rgba(240,61,104,.2);border-radius:var(--r);padding:14px;color:var(--red);font-size:12px;line-height:1.7}
+
+/* ── RESULT CARDS ── */
+.result-wrap{max-width:760px;margin:0 auto}
+.meta-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r)}
+.meta-instr{font-family:var(--mono);font-size:13px;font-weight:700}
+.meta-dot{color:var(--border2)}
+.meta-tf,.meta-lot{font-size:10px;color:var(--soft)}
+.meta-conf{margin-left:auto;font-size:10px;color:var(--muted)}
+.meta-conf span{font-family:var(--mono);color:var(--amber)}
+
+.sig-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.sig-badge{font-family:var(--mono);font-size:16px;font-weight:700;padding:8px 16px;border-radius:8px;letter-spacing:.04em;flex-shrink:0}
+.sig-badge.BUY{background:var(--green-dim);color:#0affaa;border:1px solid rgba(5,217,140,.25)}
+.sig-badge.SELL{background:var(--red-dim);color:#ff6888;border:1px solid rgba(240,61,104,.25)}
+.sig-badge.NEUTRE{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(240,165,0,.25)}
+.sig-resume{font-size:12px;color:var(--soft);line-height:1.5;flex:1}
+
+.conf-bar-wrap{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)}
+.conf-label{font-size:9px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;width:60px}
+.conf-track{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;border-radius:2px;transition:width 1s ease}
+.conf-pct{font-family:var(--mono);font-size:13px;font-weight:700;flex-shrink:0;width:36px;text-align:right}
+
+/* ── PRICE CARDS ── */
+.price-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.pcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.pcard-lbl{font-size:8px;font-family:var(--mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.pcard-val{font-family:var(--mono);font-size:15px;font-weight:700;word-break:break-all}
+.pcard-val.entry{color:var(--blue)}
+.pcard-val.tp{color:var(--green)}
+.pcard-val.sl{color:var(--red)}
+.pcard-pts{font-size:9px;color:var(--muted);margin-top:3px;font-family:var(--mono)}
+.pcard-money{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:4px;margin-top:5px}
+
+/* ── MONEY GRID ── */
+.money-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.mcard{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.mcard-val{font-family:var(--mono);font-size:13px;font-weight:700;margin-bottom:2px}
+.mcard-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+
+/* ── R/R SECTION ── */
+.rr-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.rr-title{font-size:8px;font-family:var(--mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.rr-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.rr-tag{font-size:9px;font-family:var(--mono);color:var(--muted);flex-shrink:0;width:36px}
+.rr-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.rr-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.rr-val{font-family:var(--mono);font-size:11px;font-weight:700;flex-shrink:0;width:38px;text-align:right}
+.rr-money{font-family:var(--mono);font-size:10px;flex-shrink:0;width:60px;text-align:right}
+.rr-badge{font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:20px;flex-shrink:0}
+.rr-badge.excellent{background:rgba(5,217,140,.15);color:var(--green)}
+.rr-badge.good{background:rgba(75,140,255,.12);color:var(--blue)}
+.rr-badge.fair{background:rgba(240,165,0,.12);color:var(--amber)}
+.rr-badge.poor{background:rgba(240,61,104,.12);color:var(--red)}
+.rr-summary{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rrs-item{text-align:center}
+.rrs-val{font-family:var(--mono);font-size:12px;font-weight:700}
+.rrs-lbl{font-size:8px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+
+/* ── TP LIST ── */
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+.section-title{font-size:8px;font-family:var(--mono);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.tp-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.tp-row{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;flex-wrap:wrap}
+.tp-row.sl-row{background:rgba(240,61,104,.06);border-color:rgba(240,61,104,.15)}
+.tp-lv{font-size:8px;font-family:var(--mono);color:var(--muted);flex-shrink:0;width:28px;text-transform:uppercase}
+.tp-price{font-family:var(--mono);font-size:13px;font-weight:700;flex-shrink:0}
+.tp-price.green{color:var(--green)}.tp-price.red{color:var(--red)}
+.tp-desc{font-size:10px;color:var(--soft);flex:1}
+.tp-pts{font-size:9px;font-family:var(--mono);color:var(--muted)}
+.tp-usd{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px}
+.tp-usd.profit{background:var(--green-dim);color:var(--green)}
+.tp-usd.loss{background:var(--red-dim);color:var(--red)}
+
+/* ── INDICATORS ── */
+.ind-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px}
+.ind{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 11px}
+.ind-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ind-dot.bullish{background:var(--green)}.ind-dot.bearish{background:var(--red)}.ind-dot.neutral{background:var(--amber)}
+.ind-name{font-size:10px;color:var(--muted);flex:1}
+.ind-val{font-family:var(--mono);font-size:9px;font-weight:700}
+
+/* ── ANALYSIS BOX ── */
+.abox{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:13px;font-size:12px;line-height:1.85;color:var(--text)}
+
+/* ── DISCLAIMER ── */
+.disc{margin-top:14px;padding:10px 13px;background:var(--amber-dim);border:1px solid rgba(240,165,0,.15);border-radius:8px;font-size:10px;color:var(--amber);line-height:1.7}
+
+/* ── MOBILE SETUP PAGE ── */
+.mob-setup{display:none;flex-direction:column;gap:12px;padding-bottom:20px}
+.setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
+.setup-card-title{font-size:10px;font-family:var(--mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.mob-dropzone{border:2px dashed rgba(255,255,255,0.1);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;background:var(--bg3);display:flex;flex-direction:column;align-items:center;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:all .2s}
+.mob-dropzone:active{border-color:var(--green);background:var(--green-dim)}
+@media(max-width:700px){
+  .mob-setup{display:flex}
+  .content{overflow-y:auto}
+}
+
+/* ── MOBILE BOTTOM SHEET ── */
+.mob-trigger{display:none}
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;backdrop-filter:blur(2px)}
+.sheet{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:50;max-height:88vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,16px)}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 16px}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;padding:0 16px 12px;border-bottom:1px solid var(--border)}
+.sheet-title{font-size:13px;font-weight:700}
+.sheet-close{background:var(--bg3);border:1px solid var(--border);color:var(--soft);width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}
+.sheet-body{padding:14px 16px}
+
+/* ── STICKY ANALYZE BTN MOBILE ── */
+.mob-analyze-bar{display:none;position:fixed;bottom:0;left:0;right:0;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg2);border-top:1px solid var(--border);z-index:30;gap:10px}
+.mob-cfg-btn{flex:0 0 auto;width:46px;height:46px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text)}
+.mob-cfg-btn svg{width:18px;height:18px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  html,body{overflow:hidden}
+  .sidebar{display:none}
+  .content{padding:14px;padding-bottom:80px}
+  .mob-trigger{display:block}
+  .mob-analyze-bar{display:flex}
+  .price-cards{grid-template-columns:repeat(3,1fr)}
+  .money-grid{grid-template-columns:repeat(2,1fr)}
+  .ind-grid{grid-template-columns:1fr}
+  .rr-summary{grid-template-columns:repeat(3,1fr)}
+  .hdr-logo{font-size:15px}
+  .hdr-lot{font-size:8px;padding:3px 7px}
+}
+@media(max-width:380px){
+  .price-cards{grid-template-columns:1fr}
+  .money-grid{grid-template-columns:repeat(2,1fr)}
+  .pcard-val{font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="live-dot"></div>
+  <div class="hdr-logo">Trade<em>Bot</em> AI</div>
+  <div class="hdr-pill">INDICES SYNTH</div>
+  <div class="hdr-lot">LOT 0.01 · DERIV</div>
+</div>
+
+<div class="app">
+  <!-- DESKTOP SIDEBAR -->
+  <div class="sidebar" id="desktopSidebar">
+    <div id="sidebarContent"></div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content" id="content">
+    <!-- MOBILE QUICK SETUP (shown by default on mobile) -->
+    <div class="mob-setup" id="mobSetup">
+
+      <!-- API KEY -->
+      <div class="setup-card">
+        <div class="setup-card-title">🔑 Clé API Anthropic</div>
+        <input type="password" id="apikey_mob_top" placeholder="sk-ant-api03-..." autocomplete="off"
+          style="width:100%;background:#161a22;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#dde1ec;padding:12px;font-size:13px;font-family:'JetBrains Mono',monospace;outline:none;margin-bottom:8px"
+          oninput="onApiKeyTop(this.value)">
+        <div style="font-size:11px;color:#525c72;line-height:1.7">
+          Obtenez votre clé sur <strong style="color:#4b8cff">console.anthropic.com</strong> → API Keys → Create Key
+        </div>
+      </div>
+
+      <!-- UPLOAD -->
+      <div class="setup-card">
+        <div class="setup-card-title">📊 Graphique de trading</div>
+        <input type="file" id="fi_mob_top" accept="image/*" style="display:none">
+        <div id="dz_mob_top" class="mob-dropzone" onclick="document.getElementById('fi_mob_top').click()">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#525c72;margin-bottom:8px"><path d="M4 16l4-4 4 4 4-6 4 6M4 20h16M4 4h16v12H4z"/></svg>
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px">Appuyer ici pour choisir</div>
+          <div style="font-size:11px;color:#525c72">Screenshot TradingView / Deriv · PNG JPG</div>
+        </div>
+        <img id="prev_mob_top" style="display:none;width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.1);margin-top:10px;max-height:180px;object-fit:cover">
+        <button id="chg_mob_top" style="display:none;width:100%;margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#8892a4;padding:8px;font-size:12px;cursor:pointer">↩ Changer l'image</button>
+      </div>
+
+      <!-- INSTRUMENT -->
+      <div class="setup-card">
+        <div class="setup-card-title">🎛 Instrument Deriv</div>
+        <select id="pair_mob_top" style="width:100%;background:#161a22;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#dde1ec;padding:11px 10px;font-size:13px;-webkit-appearance:none;outline:none;margin-bottom:10px">
+          <option value="">— Détecter depuis le graphique —</option>
+          <optgroup label="Volatility Index">
+            <option value="Volatility 10 Index|0.1">Volatility 10 Index (V10)</option>
+            <option value="Volatility 10 (1s) Index|0.1">Volatility 10 (1s) Index</option>
+            <option value="Volatility 25 Index|0.25">Volatility 25 Index (V25)</option>
+            <option value="Volatility 25 (1s) Index|0.25">Volatility 25 (1s) Index</option>
+            <option value="Volatility 50 Index|0.5">Volatility 50 Index (V50)</option>
+            <option value="Volatility 50 (1s) Index|0.5">Volatility 50 (1s) Index</option>
+            <option value="Volatility 75 Index|0.75">Volatility 75 Index (V75)</option>
+            <option value="Volatility 75 (1s) Index|0.75">Volatility 75 (1s) Index</option>
+            <option value="Volatility 100 Index|1.0">Volatility 100 Index (V100)</option>
+            <option value="Volatility 100 (1s) Index|1.0">Volatility 100 (1s) Index</option>
+            <option value="Volatility 150 (1s) Index|1.5">Volatility 150 (1s) Index</option>
+            <option value="Volatility 200 (1s) Index|2.0">Volatility 200 (1s) Index</option>
+            <option value="Volatility 250 (1s) Index|2.5">Volatility 250 (1s) Index</option>
+          </optgroup>
+          <optgroup label="Boom &amp; Crash">
+            <option value="Boom 300 Index|0.2">Boom 300 Index</option>
+            <option value="Boom 500 Index|0.2">Boom 500 Index</option>
+            <option value="Boom 1000 Index|0.2">Boom 1000 Index</option>
+            <option value="Crash 300 Index|0.2">Crash 300 Index</option>
+            <option value="Crash 500 Index|0.2">Crash 500 Index</option>
+            <option value="Crash 1000 Index|0.2">Crash 1000 Index</option>
+          </optgroup>
+          <optgroup label="Step Index">
+            <option value="Step Index|0.1">Step Index</option>
+            <option value="Step Index 200|0.1">Step Index 200</option>
+            <option value="Step Index 500|0.1">Step Index 500</option>
+          </optgroup>
+          <optgroup label="Jump Index">
+            <option value="Jump 10 Index|0.1">Jump 10 Index</option>
+            <option value="Jump 25 Index|0.25">Jump 25 Index</option>
+            <option value="Jump 50 Index|0.5">Jump 50 Index</option>
+            <option value="Jump 75 Index|0.75">Jump 75 Index</option>
+            <option value="Jump 100 Index|1.0">Jump 100 Index</option>
+          </optgroup>
+          <optgroup label="Range Break">
+            <option value="Range Break 100 Index|0.5">Range Break 100 Index</option>
+            <option value="Range Break 200 Index|0.5">Range Break 200 Index</option>
+          </optgroup>
+        </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-size:10px;color:#525c72;margin-bottom:5px">Balance USD</div>
+            <input type="number" id="bal_mob_top" value="100" min="1" style="width:100%;background:#161a22;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#dde1ec;padding:10px;font-size:13px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:#525c72;margin-bottom:5px">Lot size</div>
+            <input type="number" id="lot_mob_top" value="0.01" min="0.001" step="0.001" style="width:100%;background:#161a22;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#dde1ec;padding:10px;font-size:13px;outline:none">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:10px;color:#525c72;margin-bottom:5px">R/R minimum</div>
+            <select id="rr_mob_top" style="width:100%;background:#161a22;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#dde1ec;padding:10px;font-size:13px;-webkit-appearance:none;outline:none">
+              <option value="1.5">1.5 : 1</option>
+              <option value="2" selected>2 : 1</option>
+              <option value="3">3 : 1</option>
+              <option value="4">4 : 1</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:10px;color:#525c72;margin-bottom:5px">Win rate %</div>
+            <input type="number" id="wr_mob_top" value="55" min="1" max="99" style="width:100%;background:#161a22;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#dde1ec;padding:10px;font-size:13px;outline:none">
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALYZE BTN -->
+      <button id="mobTopAnalyzeBtn" class="abtn" disabled onclick="doAnalyzeMobTop()" style="margin-bottom:30px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        ANALYSER LE GRAPHIQUE
+      </button>
+
+    </div>
+    <!-- END MOBILE SETUP -->
+
+    <!-- RESULTS PLACEHOLDER -->
+    <div id="resultArea" style="display:none"></div>
+  </div>
+
+  <!-- MOBILE BOTTOM BAR (kept for result view) -->
+  <div class="mob-analyze-bar" id="mobBar" style="display:none">
+    <button class="mob-cfg-btn" id="mobOpenBtn" title="Paramètres">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+      </svg>
+    </button>
+    <button class="abtn" id="mobAnalyzeBtn" disabled style="flex:1">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      ANALYSER
+    </button>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM SHEET -->
+<div class="sheet-overlay" id="overlay"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">Configuration</span>
+    <button class="sheet-close" id="sheetClose">×</button>
+  </div>
+  <div class="sheet-body" id="sheetContent"></div>
+</div>
+
+<script>
+// ── STATE ──
+let b64=null,imgType=null;
+
+// ── CONFIG FORM HTML ──
+function configFormHTML(target){
+  return `
+  <div class="pane">
+    <div class="pane-title">📸 Graphique</div>
+    <input type="file" id="fi_${target}" accept="image/*" style="display:none">
+    <div class="dropzone" id="dz_${target}" role="button" tabindex="0">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4-4 4 4 4-6 4 6M4 20h16M4 4h16v12H4z"/></svg></div>
+      <div class="dz-title">Appuyer pour choisir une image</div>
+      <div class="dz-sub">TradingView · MT5 · Deriv · PNG/JPG</div>
+    </div>
+    <img id="prev_${target}" style="display:none" class="prev-img">
+    <button class="change-btn" id="chg_${target}">↩ Changer l'image</button>
+  </div>
+  <div class="pane">
+    <div class="pane-title">🎛 Instrument</div>
+    <div class="field">
+      <span class="field-lbl">Indice synthétique Deriv</span>
+      <select id="pair_${target}" onchange="syncAndUpdate('${target}')">
+        <option value="">— Détecter depuis le graphique —</option>
+        <optgroup label="Volatility Index">
+          <option value="Volatility 10 Index|0.1">Volatility 10 Index (V10)</option>
+          <option value="Volatility 10 (1s) Index|0.1">Volatility 10 (1s) Index</option>
+          <option value="Volatility 25 Index|0.25">Volatility 25 Index (V25)</option>
+          <option value="Volatility 25 (1s) Index|0.25">Volatility 25 (1s) Index</option>
+          <option value="Volatility 50 Index|0.5">Volatility 50 Index (V50)</option>
+          <option value="Volatility 50 (1s) Index|0.5">Volatility 50 (1s) Index</option>
+          <option value="Volatility 75 Index|0.75">Volatility 75 Index (V75)</option>
+          <option value="Volatility 75 (1s) Index|0.75">Volatility 75 (1s) Index</option>
+          <option value="Volatility 100 Index|1.0">Volatility 100 Index (V100)</option>
+          <option value="Volatility 100 (1s) Index|1.0">Volatility 100 (1s) Index</option>
+          <option value="Volatility 150 (1s) Index|1.5">Volatility 150 (1s) Index</option>
+          <option value="Volatility 200 (1s) Index|2.0">Volatility 200 (1s) Index</option>
+          <option value="Volatility 250 (1s) Index|2.5">Volatility 250 (1s) Index</option>
+        </optgroup>
+        <optgroup label="Boom & Crash">
+          <option value="Boom 300 Index|0.2">Boom 300 Index</option>
+          <option value="Boom 500 Index|0.2">Boom 500 Index</option>
+          <option value="Boom 1000 Index|0.2">Boom 1000 Index</option>
+          <option value="Crash 300 Index|0.2">Crash 300 Index</option>
+          <option value="Crash 500 Index|0.2">Crash 500 Index</option>
+          <option value="Crash 1000 Index|0.2">Crash 1000 Index</option>
+        </optgroup>
+        <optgroup label="Step Index">
+          <option value="Step Index|0.1">Step Index</option>
+          <option value="Step Index 200|0.1">Step Index 200</option>
+          <option value="Step Index 500|0.1">Step Index 500</option>
+        </optgroup>
+        <optgroup label="Jump Index">
+          <option value="Jump 10 Index|0.1">Jump 10 Index</option>
+          <option value="Jump 25 Index|0.25">Jump 25 Index</option>
+          <option value="Jump 50 Index|0.5">Jump 50 Index</option>
+          <option value="Jump 75 Index|0.75">Jump 75 Index</option>
+          <option value="Jump 100 Index|1.0">Jump 100 Index</option>
+        </optgroup>
+        <optgroup label="Range Break">
+          <option value="Range Break 100 Index|0.5">Range Break 100 Index</option>
+          <option value="Range Break 200 Index|0.5">Range Break 200 Index</option>
+        </optgroup>
+        <optgroup label="DEX">
+          <option value="DEX 600 UP Index|0.5">DEX 600 UP Index</option>
+          <option value="DEX 600 DOWN Index|0.5">DEX 600 DOWN Index</option>
+          <option value="DEX 900 UP Index|0.5">DEX 900 UP Index</option>
+          <option value="DEX 900 DOWN Index|0.5">DEX 900 DOWN Index</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <span class="field-lbl">Unité de temps</span>
+        <select id="tf_${target}">
+          <option value="">Auto-detect</option>
+          <option>M1</option><option>M5</option><option>M15</option>
+          <option>M30</option><option>H1</option><option>H4</option><option>D1</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="field-lbl">Lot size</span>
+        <input type="number" id="lot_${target}" value="0.01" min="0.001" step="0.001" onchange="syncAndUpdate('${target}')">
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-lbl">Balance compte (USD)</span>
+      <input type="number" id="bal_${target}" value="100" min="1" step="1" onchange="syncAndUpdate('${target}')">
+    </div>
+    <div class="acc-strip">
+      <div class="as-item"><div class="as-val" id="as_lot_${target}">0.01</div><div class="as-lbl">Lot</div></div>
+      <div class="as-item"><div class="as-val" id="as_risk_${target}">$2.00</div><div class="as-lbl">Risque 2%</div></div>
+      <div class="as-item"><div class="as-val" id="as_pip_${target}">—</div><div class="as-lbl">$/pip</div></div>
+    </div>
+  </div>
+  <div class="pane">
+    <div class="pane-title">🔑 Clé API Anthropic</div>
+    <div class="field">
+      <span class="field-lbl">Clé API (console.anthropic.com)</span>
+      <input type="password" id="apikey_${target}" placeholder="sk-ant-api03-..." style="font-family:var(--mono);font-size:11px" oninput="syncApiKey('${target}')">
+    </div>
+    <div style="font-size:10px;color:var(--muted);line-height:1.6;margin-top:4px">
+      Obtenez votre clé sur <strong style="color:var(--blue)">console.anthropic.com</strong> → API Keys. Elle reste uniquement en mémoire.
+    </div>
+  </div>
+  <div class="pane">
+    <div class="pane-title">⚙️ Paramètres</div>
+    <div class="field">
+      <span class="field-lbl">Style d'analyse</span>
+      <select id="style_${target}">
+        <option>Analyse technique complète</option>
+        <option>Price Action & Structure</option>
+        <option>Scalping M1-M5</option>
+        <option>Swing H1-H4</option>
+        <option>Boom & Crash spécifique</option>
+        <option>Support / Résistance</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <span class="field-lbl">R/R minimum</span>
+        <select id="rr_${target}">
+          <option value="1.5">1.5 : 1</option>
+          <option value="2" selected>2 : 1</option>
+          <option value="3">3 : 1</option>
+          <option value="4">4 : 1</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="field-lbl">Win rate estimé %</span>
+        <input type="number" id="wr_${target}" value="55" min="1" max="99" step="1">
+      </div>
+    </div>
+  </div>
+  <div class="pane" style="border-bottom:none">
+    <button class="abtn" id="btn_${target}" disabled onclick="doAnalyze('${target}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      ANALYSER LE GRAPHIQUE
+    </button>
+  </div>`;
+}
+
+// ── RENDER SIDEBAR FORMS ──
+function initForms(){
+  document.getElementById('sidebarContent').innerHTML = configFormHTML('desk');
+  document.getElementById('sheetContent').innerHTML = configFormHTML('mob');
+  ['desk','mob'].forEach(t=>{
+    bindDropzone(t);
+    updateAccStrip(t);
+  });
+}
+
+function syncApiKey(from){
+  const to=from==='desk'?'mob':'desk';
+  const src=document.getElementById('apikey_'+from);
+  const dst=document.getElementById('apikey_'+to);
+  if(src&&dst)dst.value=src.value;
+}
+
+function syncAndUpdate(from){
+  const to = from==='desk'?'mob':'desk';
+  const fields=['pair','tf','lot','bal','style','rr','wr','apikey'];
+  fields.forEach(f=>{
+    const src=document.getElementById(f+'_'+from);
+    const dst=document.getElementById(f+'_'+to);
+    if(src&&dst) dst.value=src.value;
+  });
+  updateAccStrip(from);
+  updateAccStrip(to);
+  syncBtnState();
+}
+
+function getVal(field, target='desk'){
+  const el=document.getElementById(field+'_'+target)||document.getElementById(field+'_mob');
+  return el?el.value:'';
+}
+
+function bindDropzone(t){
+  const dz=document.getElementById('dz_'+t);
+  const fi=document.getElementById('fi_'+t);
+  const prev=document.getElementById('prev_'+t);
+  const chg=document.getElementById('chg_'+t);
+  if(!dz||!fi)return;
+
+  // Explicit click trigger — works on all mobile browsers
+  dz.addEventListener('click',()=>fi.click());
+  dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')fi.click()});
+
+  // Drag & drop for desktop
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault();dz.classList.remove('drag');
+    const f=e.dataTransfer.files[0];
+    if(f&&f.type.startsWith('image/'))loadFile(f,t);
+  });
+
+  fi.addEventListener('change',()=>{if(fi.files&&fi.files[0])loadFile(fi.files[0],t)});
+
+  chg.addEventListener('click',e=>{
+    e.stopPropagation();
+    prev.style.display='none';chg.style.display='none';dz.style.display='flex';
+    b64=null;imgType=null;fi.value='';
+    const other=t==='desk'?'mob':'desk';
+    const p2=document.getElementById('prev_'+other);
+    const c2=document.getElementById('chg_'+other);
+    const d2=document.getElementById('dz_'+other);
+    if(p2)p2.style.display='none';
+    if(c2)c2.style.display='none';
+    if(d2)d2.style.display='flex';
+    const fi2=document.getElementById('fi_'+other);
+    if(fi2)fi2.value='';
+    syncBtnState();
+  });
+}
+
+function loadFile(file,t){
+  const r=new FileReader();
+  r.onload=e=>{
+    const d=e.target.result;
+    b64=d.split(',')[1];imgType=file.type;
+    ['desk','mob'].forEach(target=>{
+      const prev=document.getElementById('prev_'+target);
+      const chg=document.getElementById('chg_'+target);
+      const dz=document.getElementById('dz_'+target);
+      if(prev){prev.src=d;prev.style.display='block'}
+      if(chg)chg.style.display='block';
+      if(dz)dz.style.display='none';
+    });
+    syncBtnState();
+  };
+  r.readAsDataURL(file);
+}
+
+function syncBtnState(){
+  const ok=!!b64;
+  ['desk','mob'].forEach(t=>{
+    const btn=document.getElementById('btn_'+t);
+    if(btn)btn.disabled=!ok;
+  });
+  const mb=document.getElementById('mobAnalyzeBtn');
+  if(mb)mb.disabled=!ok;
+}
+
+function getPipVal(t='desk'){
+  const s=document.getElementById('pair_'+t)||document.getElementById('pair_mob');
+  if(!s||!s.value)return null;
+  return parseFloat(s.value.split('|')[1])||null;
+}
+
+function updateAccStrip(t){
+  const lot=parseFloat((document.getElementById('lot_'+t)||{}).value)||0.01;
+  const bal=parseFloat((document.getElementById('bal_'+t)||{}).value)||100;
+  const pv=getPipVal(t);
+  const asLot=document.getElementById('as_lot_'+t);
+  const asRisk=document.getElementById('as_risk_'+t);
+  const asPip=document.getElementById('as_pip_'+t);
+  if(asLot)asLot.textContent=lot.toFixed(3);
+  if(asRisk)asRisk.textContent='$'+(bal*0.02).toFixed(2);
+  if(asPip)asPip.textContent=pv?'$'+(lot*pv).toFixed(5):'—';
+}
+
+// ── MOBILE SHEET ──
+const overlay=document.getElementById('overlay');
+const sheet=document.getElementById('sheet');
+document.getElementById('mobOpenBtn').addEventListener('click',()=>{sheet.style.display='block';overlay.style.display='block';setTimeout(()=>{sheet.style.transform='translateY(0)'},10)});
+document.getElementById('sheetClose').addEventListener('click',closeSheet);
+overlay.addEventListener('click',closeSheet);
+function closeSheet(){sheet.style.display='none';overlay.style.display='none'}
+
+// Mob analyze btn
+document.getElementById('mobAnalyzeBtn').addEventListener('click',()=>doAnalyze('mob'));
+
+// ── ANALYZE ──
+async function doAnalyze(src){
+  if(!b64)return;
+  // collect values – try src first then other
+  function gv(f){const e=document.getElementById(f+'_'+src)||document.getElementById(f+'_'+(src==='desk'?'mob':'desk'));return e?e.value:'';}
+  const selVal=gv('pair');
+  const instr=selVal?selVal.split('|')[0]:'a detecter depuis le graphique';
+  const pipVal=selVal?parseFloat(selVal.split('|')[1]):null;
+  const lot=parseFloat(gv('lot'))||0.01;
+  const bal=parseFloat(gv('bal'))||100;
+  const tf=gv('tf')||'a detecter';
+  const style=gv('style')||'Analyse technique complete';
+  const rr=parseFloat(gv('rr'))||2;
+  const wr=parseFloat(gv('wr'))||55;
+  const pipUSD=pipVal?(lot*pipVal).toFixed(5):null;
+
+  // Disable all btns
+  setLoading(true);
+  closeSheet();
+
+  const prompt=`Tu es un expert trader specialise en indices synthetiques Deriv (Volatility Index, Boom & Crash, Step Index, Jump Index, Range Break, DEX). Analyse ce graphique de maniere chirurgicale.
+
+INSTRUMENT: ${instr}
+UNITE DE TEMPS: ${tf}
+STYLE: ${style}
+R/R MINIMUM EXIGE: ${rr}:1
+WIN RATE ESTIME DU TRADER: ${wr}%
+LOT: ${lot}
+BALANCE: $${bal} USD
+${pipUSD?'VALEUR 1 PIP: $'+pipUSD+' USD':'Estime la valeur pip selon linstrument detecte'}
+RISQUE MAX (2%): $${(bal*0.02).toFixed(2)} USD
+
+REGLES R/R STRICTES:
+- Ne propose un signal BUY ou SELL QUE si le R/R reel est superieur ou egal a ${rr}:1
+- Calcule le R/R pour chaque niveau TP separement: RR_TP = |prix_tp - prix_entree| / |prix_entree - stop_loss|
+- Si le meilleur R/R possible est inferieur a ${rr}, retourne signal NEUTRE avec explication
+- TP1 doit etre realiste (pas trop loin), TP2 et TP3 progressifs
+
+Adapte ton analyse aux specificites des indices synthetiques.
+
+Reponds UNIQUEMENT en JSON strict sans aucun texte avant ou apres:
+{"signal":"BUY|SELL|NEUTRE","instrument":"nom exact","timeframe":"UdT","confiance":0_to_100,"entree":{"prix":"valeur","type":"Marche|Limite|Stop","description":"justification courte"},"take_profits":[{"niveau":"TP1","prix":"val","pips":"nb points","description":"CT","rr_calcule":"valeur decimale"},{"niveau":"TP2","prix":"val","pips":"nb points","description":"MT","rr_calcule":"valeur decimale"},{"niveau":"TP3","prix":"val","pips":"nb points","description":"LT","rr_calcule":"valeur decimale"}],"stop_loss":{"prix":"val","pips":"nb points","description":"justification placement exact"},"indicateurs":[{"nom":"Tendance","signal":"bullish|bearish|neutral","valeur":"desc"},{"nom":"Structure marche","signal":"bullish|bearish|neutral","valeur":"HH/HL ou LH/LL"},{"nom":"RSI","signal":"bullish|bearish|neutral","valeur":"valeur si visible"},{"nom":"MACD","signal":"bullish|bearish|neutral","valeur":"etat"},{"nom":"Bollinger","signal":"bullish|bearish|neutral","valeur":"etat"},{"nom":"Volume/Momentum","signal":"bullish|bearish|neutral","valeur":"etat"},{"nom":"Support/Resistance","signal":"bullish|bearish|neutral","valeur":"zones cles"},{"nom":"Price Action","signal":"bullish|bearish|neutral","valeur":"pattern detecte"}],"analyse":"5-7 phrases techniques precises. Tendance, structure, zones, patterns. Specifique synthetics.","risques":"2-3 phrases sur invalidation et risques concrets.","resume":"1 phrase trader pro"}`;
+
+  try{
+    // Get API key from either form
+    const apiKey=(document.getElementById('apikey_'+src)||document.getElementById('apikey_mob')||{}).value||'';
+    if(!apiKey||!apiKey.startsWith('sk-')){
+      document.getElementById('content').innerHTML='<div class="result-wrap"><div class="ebox"><strong>Clé API manquante</strong><br><br>Entrez votre clé API Anthropic dans le panneau de configuration.<br><br>Obtenez-la sur <strong>console.anthropic.com</strong> → API Keys → Create Key.<br><br>Votre clé commence par <code style="font-family:var(--mono)">sk-ant-...</code></div></div>';
+      setLoading(false);return;
+    }
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:imgType,data:b64}},{type:'text',text:prompt}]}]})});
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    let raw=data.content.map(x=>x.text||'').join('').trim().replace(/```json|```/g,'').trim();
+    let result;
+    try{result=JSON.parse(raw)}catch(e){const m=raw.match(/\{[\s\S]*\}/);if(m)result=JSON.parse(m[0]);else throw new Error('JSON invalide: '+raw.substring(0,200))}
+    renderResult(result,lot,pipVal,bal,rr,wr);
+  }catch(err){
+    document.getElementById('content').innerHTML=`<div class="result-wrap"><div class="ebox"><strong>Erreur d'analyse</strong><br><br>${err.message}<br><br>Verifiez votre image et reessayez.</div></div>`;
+  }finally{setLoading(false)}
+}
+
+function setLoading(on){
+  const ic='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>';
+  const ld='<div class="spin"></div>';
+  ['desk','mob'].forEach(t=>{
+    const b=document.getElementById('btn_'+t);
+    if(b){b.disabled=on;b.innerHTML=on?ld+' ANALYSE EN COURS...':ic+' ANALYSER LE GRAPHIQUE'}
+  });
+  const mb=document.getElementById('mobAnalyzeBtn');
+  if(mb){mb.disabled=on;mb.innerHTML=on?ld+' ANALYSE...':ic+' ANALYSER'}
+  if(on) document.getElementById('content').innerHTML='<div class="loading"><div class="lspin"></div><div class="ltxt ldots">Analyse du graphique</div></div>';
+}
+
+function calcMoney(pips,lot,pv){
+  if(!pips||!pv)return null;
+  const p=parseFloat(String(pips).replace(/[^0-9.]/g,''));
+  return isNaN(p)?null:(p*lot*pv).toFixed(2);
+}
+
+function rrBadge(val){
+  const n=parseFloat(val)||0;
+  if(n>=4)return{cls:'excellent',label:'Excellent'};
+  if(n>=2.5)return{cls:'good',label:'Bon'};
+  if(n>=1.5)return{cls:'fair',label:'Correct'};
+  return{cls:'poor',label:'Faible'};
+}
+
+function rrColor(val){
+  const n=parseFloat(val)||0;
+  if(n>=3)return'var(--green)';
+  if(n>=2)return'var(--blue)';
+  if(n>=1.5)return'var(--amber)';
+  return'var(--red)';
+}
+
+function renderResult(r,lot,pipVal,bal,minRR,winRate){
+  const sig=r.signal||'NEUTRE';
+  const tp=r.take_profits||[];
+  const inds=r.indicateurs||[];
+  const conf=Math.min(100,Math.max(0,r.confiance||50));
+  const pv=pipVal||1;
+  const pipUSD=(lot*pv).toFixed(5);
+  const risk2=(bal*0.02).toFixed(2);
+
+  const slMoney=calcMoney(r.stop_loss?.pips,lot,pv);
+  const tpMoney=tp.map(t=>calcMoney(t.pips,lot,pv));
+
+  // Expected value calculation
+  const wr=winRate/100;
+  const bestRR=parseFloat(tp[0]?.rr_calcule)||0;
+  const ev=((wr*bestRR)-(1-wr)*1).toFixed(2);
+  const evPositive=parseFloat(ev)>0;
+
+  // Min lots for 2% risk
+  const slPips=parseFloat(String(r.stop_loss?.pips||'0').replace(/[^0-9.]/g,''))||0;
+  const minLots=slPips>0&&pv>0?((bal*0.02)/(slPips*pv)).toFixed(3):'—';
+
+  const confColor=conf>70?'var(--green)':conf>40?'var(--amber)':'var(--red)';
+
+  const tpRows=tp.map((t,i)=>{
+    const money=tpMoney[i];
+    const rr=parseFloat(t.rr_calcule)||0;
+    const b=rrBadge(rr);
+    const fill=Math.min(100,(rr/5)*100);
+    return `
+    <div class="tp-row">
+      <span class="tp-lv">${t.niveau}</span>
+      <span class="tp-price green">${t.prix}</span>
+      <span class="tp-desc">${t.description||''}</span>
+      ${t.pips?`<span class="tp-pts">${t.pips}pts</span>`:''}
+      ${money?`<span class="tp-usd profit">+$${money}</span>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 12px 8px;margin-bottom:2px">
+      <span style="font-size:8px;font-family:var(--mono);color:var(--muted);width:28px"></span>
+      <div class="rr-track"><div class="rr-fill" style="width:${fill}%;background:${rrColor(rr)}"></div></div>
+      <span class="rr-val" style="color:${rrColor(rr)}">${rr.toFixed(2)}</span>
+      <span class="rr-badge ${b.cls}">${b.label}</span>
+      ${money&&slMoney?`<span style="font-size:9px;font-family:var(--mono);color:var(--soft)">EV:${evPositive?'+':''} ${ev}x</span>`:''}
+    </div>`;
+  }).join('');
+
+  const indHTML=inds.map(i=>`
+    <div class="ind">
+      <div class="ind-dot ${i.signal}"></div>
+      <span class="ind-name">${i.nom}</span>
+      <span class="ind-val" style="color:${i.signal==='bullish'?'var(--green)':i.signal==='bearish'?'var(--red)':'var(--amber)'}">${i.valeur||i.signal}</span>
+    </div>`).join('');
+
+  // R/R summary
+  const rrValues=tp.map(t=>parseFloat(t.rr_calcule)||0).filter(v=>v>0);
+  const bestRRv=rrValues.length?Math.max(...rrValues).toFixed(2):'—';
+  const avgRRv=rrValues.length?(rrValues.reduce((a,b)=>a+b,0)/rrValues.length).toFixed(2):'—';
+
+  document.getElementById('content').innerHTML=`
+  <div class="result-wrap">
+    <div class="meta-bar">
+      <span class="meta-instr">${r.instrument||'SYNTHETICS'}</span>
+      <span class="meta-dot">·</span>
+      <span class="meta-tf">${r.timeframe||'—'}</span>
+      <span class="meta-dot">·</span>
+      <span class="meta-lot">Lot ${lot} · $${pipUSD}/pip</span>
+      <div class="meta-conf">Confiance <span>${r.confiance||0}%</span></div>
+    </div>
+
+    <div class="sig-row">
+      <div class="sig-badge ${sig}">${sig}</div>
+      <div class="sig-resume">${r.resume||''}</div>
+    </div>
+
+    <div class="conf-bar-wrap">
+      <span class="conf-label">Confiance</span>
+      <div class="conf-track"><div class="conf-fill" style="width:${conf}%;background:${confColor}"></div></div>
+      <span class="conf-pct" style="color:${confColor}">${conf}%</span>
+    </div>
+
+    <div class="price-cards">
+      <div class="pcard">
+        <div class="pcard-lbl">📍 Entrée</div>
+        <div class="pcard-val entry">${r.entree?.prix||'—'}</div>
+        <div class="pcard-pts">${r.entree?.type||''}</div>
+      </div>
+      <div class="pcard">
+        <div class="pcard-lbl">🎯 TP1</div>
+        <div class="pcard-val tp">${tp[0]?.prix||'—'}</div>
+        <div class="pcard-pts">${tp[0]?.pips?tp[0].pips+'pts':''}</div>
+        ${tpMoney[0]?`<div class="pcard-money" style="background:var(--green-dim);color:var(--green)">+$${tpMoney[0]}</div>`:''}
+      </div>
+      <div class="pcard">
+        <div class="pcard-lbl">🛡 Stop Loss</div>
+        <div class="pcard-val sl">${r.stop_loss?.prix||'—'}</div>
+        <div class="pcard-pts">${r.stop_loss?.pips?r.stop_loss.pips+'pts':''}</div>
+        ${slMoney?`<div class="pcard-money" style="background:var(--red-dim);color:var(--red)">-$${slMoney}</div>`:''}
+      </div>
+    </div>
+
+    <div class="money-grid">
+      <div class="mcard"><div class="mcard-val" style="color:var(--violet)">$${pipUSD}</div><div class="mcard-lbl">Valeur/pip</div></div>
+      <div class="mcard"><div class="mcard-val" style="color:var(--red)">${slMoney?'-$'+slMoney:'—'}</div><div class="mcard-lbl">Perte si SL</div></div>
+      <div class="mcard"><div class="mcard-val" style="color:var(--green)">${tpMoney[0]?'+$'+tpMoney[0]:'—'}</div><div class="mcard-lbl">Gain si TP1</div></div>
+      <div class="mcard"><div class="mcard-val" style="color:var(--amber)">$${risk2}</div><div class="mcard-lbl">Risque 2%</div></div>
+    </div>
+
+    <div class="rr-section">
+      <div class="rr-title">⚖️ Analyse Risque / Récompense — Min requis ${minRR}:1</div>
+      ${tp.map((t,i)=>{
+        const rr=parseFloat(t.rr_calcule)||0;
+        const b=rrBadge(rr);
+        const fill=Math.min(100,(rr/5)*100);
+        const money=tpMoney[i];
+        return `<div class="rr-row">
+          <span class="rr-tag">${t.niveau}</span>
+          <div class="rr-track"><div class="rr-fill" style="width:${fill}%;background:${rrColor(rr)}"></div></div>
+          <span class="rr-val" style="color:${rrColor(rr)}">${rr.toFixed(1)}:1</span>
+          <span class="rr-badge ${b.cls}">${b.label}</span>
+          ${money?`<span class="rr-money" style="color:var(--green)">+$${money}</span>`:''}
+        </div>`;
+      }).join('')}
+      <div class="rr-summary">
+        <div class="rrs-item"><div class="rrs-val" style="color:${rrColor(bestRRv)}">${bestRRv}:1</div><div class="rrs-lbl">Meilleur R/R</div></div>
+        <div class="rrs-item"><div class="rrs-val" style="color:var(--blue)">${avgRRv}:1</div><div class="rrs-lbl">R/R Moyen</div></div>
+        <div class="rrs-item"><div class="rrs-val" style="color:${evPositive?'var(--green)':'var(--red)'}">${evPositive?'+':''}${ev}x</div><div class="rrs-lbl">Espérance @${winRate}%</div></div>
+      </div>
+      ${minLots!=='—'?`<div style="margin-top:10px;padding:8px 10px;background:var(--blue-dim);border:1px solid rgba(75,140,255,.15);border-radius:7px;font-size:10px;color:var(--blue);font-family:var(--mono)">
+        Lot max pour rester dans le risque 2% avec ce SL : <strong>${minLots}</strong>
+      </div>`:''}
+    </div>
+
+    <hr class="divider">
+    <div class="section-title">🎯 Niveaux Take Profit détaillés</div>
+    <div class="tp-list">
+      ${tpRows}
+      <div class="tp-row sl-row">
+        <span class="tp-lv">SL</span>
+        <span class="tp-price red">${r.stop_loss?.prix||'—'}</span>
+        <span class="tp-desc">${r.stop_loss?.description||''}</span>
+        ${r.stop_loss?.pips?`<span class="tp-pts">${r.stop_loss.pips}pts</span>`:''}
+        ${slMoney?`<span class="tp-usd loss">-$${slMoney}</span>`:''}
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="section-title">📈 Indicateurs techniques</div>
+    <div class="ind-grid">${indHTML}</div>
+
+    <hr class="divider">
+    <div class="section-title">🔍 Analyse technique</div>
+    <div class="abox" style="margin-bottom:12px">${r.analyse||''}</div>
+
+    <div class="section-title" style="margin-top:12px">⚠️ Risques & Invalidation</div>
+    <div class="abox" style="border-color:rgba(240,61,104,.12);color:var(--soft);margin-bottom:14px">${r.risques||''}</div>
+
+    <div class="disc">⚠️ Analyse IA éducative uniquement — pas un conseil financier. Les calculs de gain/perte sont des estimations. Tradez avec une gestion de risque stricte.</div>
+  </div>`;
+}
+
+// ── MOBILE TOP FORM ──
+(function(){
+  const fi=document.getElementById('fi_mob_top');
+  const prev=document.getElementById('prev_mob_top');
+  const chg=document.getElementById('chg_mob_top');
+  const dz=document.getElementById('dz_mob_top');
+  if(!fi)return;
+
+  fi.addEventListener('change',()=>{
+    if(fi.files&&fi.files[0]){
+      loadFileMobTop(fi.files[0]);
+    }
+  });
+
+  if(chg){
+    chg.addEventListener('click',e=>{
+      e.stopPropagation();
+      prev.style.display='none';
+      chg.style.display='none';
+      dz.style.display='flex';
+      b64=null;imgType=null;fi.value='';
+      syncBtnState();
+    });
+  }
+})();
+
+function loadFileMobTop(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    const d=e.target.result;
+    b64=d.split(',')[1];imgType=file.type;
+    const prev=document.getElementById('prev_mob_top');
+    const chg=document.getElementById('chg_mob_top');
+    const dz=document.getElementById('dz_mob_top');
+    if(prev){prev.src=d;prev.style.display='block'}
+    if(chg)chg.style.display='block';
+    if(dz)dz.style.display='none';
+    syncBtnState();
+  };
+  r.readAsDataURL(file);
+}
+
+function onApiKeyTop(val){
+  // sync to sheet form too
+  ['desk','mob'].forEach(t=>{
+    const el=document.getElementById('apikey_'+t);
+    if(el)el.value=val;
+  });
+}
+
+function syncBtnState(){
+  const ok=!!b64;
+  ['desk','mob'].forEach(t=>{
+    const b=document.getElementById('btn_'+t);
+    if(b)b.disabled=!ok;
+  });
+  const mb=document.getElementById('mobAnalyzeBtn');
+  if(mb)mb.disabled=!ok;
+  const mt=document.getElementById('mobTopAnalyzeBtn');
+  if(mt)mt.disabled=!ok;
+}
+
+async function doAnalyzeMobTop(){
+  if(!b64)return;
+  const apiKey=(document.getElementById('apikey_mob_top')||{}).value||'';
+  const selVal=(document.getElementById('pair_mob_top')||{}).value||'';
+  const instr=selVal?selVal.split('|')[0]:'a detecter depuis le graphique';
+  const pipVal=selVal?parseFloat(selVal.split('|')[1]):null;
+  const lot=parseFloat((document.getElementById('lot_mob_top')||{}).value)||0.01;
+  const bal=parseFloat((document.getElementById('bal_mob_top')||{}).value)||100;
+  const rr=parseFloat((document.getElementById('rr_mob_top')||{}).value)||2;
+  const wr=parseFloat((document.getElementById('wr_mob_top')||{}).value)||55;
+  const tf='a detecter';
+  const style='Analyse technique complete';
+  const pipUSD=pipVal?(lot*pipVal).toFixed(5):null;
+
+  // Show loading in result area and hide setup
+  const setup=document.getElementById('mobSetup');
+  const ra=document.getElementById('resultArea');
+  if(setup)setup.style.display='none';
+  if(ra){ra.style.display='block';ra.innerHTML='<div class="loading"><div class="lspin"></div><div class="ltxt ldots">Analyse du graphique</div></div>';}
+
+  const btn=document.getElementById('mobTopAnalyzeBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="spin"></div> ANALYSE...';}
+
+  if(!apiKey||!apiKey.startsWith('sk-')){
+    if(setup)setup.style.display='flex';
+    if(ra)ra.style.display='none';
+    alert('Entrez votre clé API Anthropic (sk-ant-...)');
+    if(btn){btn.disabled=false;btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> ANALYSER LE GRAPHIQUE';}
+    return;
+  }
+
+  const prompt=buildPrompt(instr,tf,style,rr,wr,lot,bal,pipUSD);
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:imgType,data:b64}},{type:'text',text:prompt}]}]})});
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    let raw=data.content.map(x=>x.text||'').join('').trim().replace(/```json|```/g,'').trim();
+    let result;
+    try{result=JSON.parse(raw)}catch(e){const m=raw.match(/\{[\s\S]*\}/);if(m)result=JSON.parse(m[0]);else throw new Error('JSON invalide')}
+    // Show result + back button
+    if(ra){
+      ra.innerHTML='<button onclick="backToSetup()" style="display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--soft);padding:9px 14px;font-size:12px;cursor:pointer;font-family:var(--syne);margin-bottom:14px;width:100%">← Nouvelle analyse</button><div id="resultInner"></div>';
+      const inner=document.getElementById('resultInner');
+      const tmp=document.createElement('div');
+      tmp.innerHTML=buildResultHTML(result,lot,pipVal,bal,rr,wr);
+      inner.appendChild(tmp);
+    }
+  }catch(err){
+    if(ra)ra.innerHTML='<button onclick="backToSetup()" style="display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--soft);padding:9px 14px;font-size:12px;cursor:pointer;font-family:var(--syne);margin-bottom:14px;width:100%">← Retour</button><div class="ebox"><strong>Erreur</strong><br><br>'+err.message+'</div>';
+  }
+  if(btn){btn.disabled=false;btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> ANALYSER LE GRAPHIQUE';}
+}
+
+function backToSetup(){
+  const setup=document.getElementById('mobSetup');
+  const ra=document.getElementById('resultArea');
+  if(setup)setup.style.display='flex';
+  if(ra)ra.style.display='none';
+}
+
+function buildPrompt(instr,tf,style,rr,wr,lot,bal,pipUSD){
+  return `Tu es un expert trader specialise en indices synthetiques Deriv (Volatility Index, Boom & Crash, Step Index, Jump Index, Range Break, DEX). Analyse ce graphique de maniere chirurgicale.
+
+INSTRUMENT: ${instr}
+UNITE DE TEMPS: ${tf}
+STYLE: ${style}
+R/R MINIMUM EXIGE: ${rr}:1
+WIN RATE ESTIME DU TRADER: ${wr}%
+LOT: ${lot}
+BALANCE: $${bal} USD
+${pipUSD?'VALEUR 1 PIP: $'+pipUSD+' USD':'Estime la valeur pip selon linstrument detecte'}
+RISQUE MAX (2%): $${(bal*0.02).toFixed(2)} USD
+
+REGLES R/R STRICTES:
+- Ne propose un signal BUY ou SELL QUE si le R/R reel est superieur ou egal a ${rr}:1
+- Calcule le R/R pour chaque niveau TP separement: RR_TP = |prix_tp - prix_entree| / |prix_entree - stop_loss|
+- Si le meilleur R/R possible est inferieur a ${rr}, retourne signal NEUTRE avec explication
+- TP1 doit etre realiste (pas trop loin), TP2 et TP3 progressifs
+
+Adapte ton analyse aux specificites des indices synthetiques.
+
+Reponds UNIQUEMENT en JSON strict sans aucun texte avant ou apres:
+{"signal":"BUY|SELL|NEUTRE","instrument":"nom exact","timeframe":"UdT","confiance":0_to_100,"entree":{"prix":"valeur","type":"Marche|Limite|Stop","description":"justification courte"},"take_profits":[{"niveau":"TP1","prix":"val","pips":"nb points","description":"CT","rr_calcule":"valeur decimale"},{"niveau":"TP2","prix":"val","pips":"nb points","description":"MT","rr_calcule":"valeur decimale"},{"niveau":"TP3","prix":"val","pips":"nb points","description":"LT","rr_calcule":"valeur decimale"}],"stop_loss":{"prix":"val","pips":"nb points","description":"justification placement exact"},"indicateurs":[{"nom":"Tendance","signal":"bullish|bearish|neutral","valeur":"desc"},{"nom":"Structure marche","signal":"bullish|bearish|neutral","valeur":"HH/HL ou LH/LL"},{"nom":"RSI","signal":"bullish|bearish|neutral","valeur":"valeur si visible"},{"nom":"MACD","signal":"bullish|bearish|neutral","valeur":"etat"},{"nom":"Bollinger","signal":"bullish|bearish|neutral","valeur":"etat"},{"nom":"Volume/Momentum","signal":"bullish|bearish|neutral","valeur":"etat"},{"nom":"Support/Resistance","signal":"bullish|bearish|neutral","valeur":"zones cles"},{"nom":"Price Action","signal":"bullish|bearish|neutral","valeur":"pattern detecte"}],"analyse":"5-7 phrases techniques precises. Tendance, structure, zones, patterns. Specifique synthetics.","risques":"2-3 phrases sur invalidation et risques concrets.","resume":"1 phrase trader pro"}`;
+}
+
+function buildResultHTML(r,lot,pipVal,bal,minRR,winRate){
+  const sig=r.signal||'NEUTRE';
+  const tp=r.take_profits||[];
+  const inds=r.indicateurs||[];
+  const conf=Math.min(100,Math.max(0,r.confiance||50));
+  const pv=pipVal||1;
+  const pipUSD=(lot*pv).toFixed(5);
+  const risk2=(bal*0.02).toFixed(2);
+  const slMoney=calcMoney(r.stop_loss?.pips,lot,pv);
+  const tpMoney=tp.map(t=>calcMoney(t.pips,lot,pv));
+  const wr=winRate/100;
+  const bestRR=parseFloat(tp[0]?.rr_calcule)||0;
+  const ev=((wr*bestRR)-(1-wr)*1).toFixed(2);
+  const evPositive=parseFloat(ev)>0;
+  const slPips=parseFloat(String(r.stop_loss?.pips||'0').replace(/[^0-9.]/g,''))||0;
+  const minLots=slPips>0&&pv>0?((bal*0.02)/(slPips*pv)).toFixed(3):'—';
+  const confColor=conf>70?'var(--green)':conf>40?'var(--amber)':'var(--red)';
+  const rrValues=tp.map(t=>parseFloat(t.rr_calcule)||0).filter(v=>v>0);
+  const bestRRv=rrValues.length?Math.max(...rrValues).toFixed(2):'—';
+  const avgRRv=rrValues.length?(rrValues.reduce((a,b)=>a+b,0)/rrValues.length).toFixed(2):'—';
+  const indHTML=inds.map(i=>`<div class="ind"><div class="ind-dot ${i.signal}"></div><span class="ind-name">${i.nom}</span><span class="ind-val" style="color:${i.signal==='bullish'?'var(--green)':i.signal==='bearish'?'var(--red)':'var(--amber)'}">${i.valeur||i.signal}</span></div>`).join('');
+  const tpRows=tp.map((t,i)=>{const money=tpMoney[i];const rr=parseFloat(t.rr_calcule)||0;const b=rrBadge(rr);const fill=Math.min(100,(rr/5)*100);return`<div class="tp-row"><span class="tp-lv">${t.niveau}</span><span class="tp-price green">${t.prix}</span><span class="tp-desc">${t.description||''}</span>${t.pips?`<span class="tp-pts">${t.pips}pts</span>`:''} ${money?`<span class="tp-usd profit">+$${money}</span>`:''}</div><div style="display:flex;align-items:center;gap:8px;padding:3px 12px 7px"><span style="width:28px"></span><div class="rr-track"><div class="rr-fill" style="width:${fill}%;background:${rrColor(rr)}"></div></div><span class="rr-val" style="color:${rrColor(rr)}">${rr.toFixed(2)}</span><span class="rr-badge ${b.cls}">${b.label}</span></div>`;}).join('');
+  return `<div class="result-wrap">
+    <div class="meta-bar"><span class="meta-instr">${r.instrument||'SYNTHETICS'}</span><span class="meta-dot">·</span><span class="meta-tf">${r.timeframe||''}</span><span class="meta-dot">·</span><span class="meta-lot">Lot ${lot} · $${pipUSD}/pip</span><div class="meta-conf">Confiance <span>${r.confiance||0}%</span></div></div>
+    <div class="sig-row"><div class="sig-badge ${sig}">${sig}</div><div class="sig-resume">${r.resume||''}</div></div>
+    <div class="conf-bar-wrap"><span class="conf-label">Confiance</span><div class="conf-track"><div class="conf-fill" style="width:${conf}%;background:${confColor}"></div></div><span class="conf-pct" style="color:${confColor}">${conf}%</span></div>
+    <div class="price-cards"><div class="pcard"><div class="pcard-lbl">Entree</div><div class="pcard-val entry">${r.entree?.prix||'—'}</div><div class="pcard-pts">${r.entree?.type||''}</div></div><div class="pcard"><div class="pcard-lbl">TP1</div><div class="pcard-val tp">${tp[0]?.prix||'—'}</div><div class="pcard-pts">${tp[0]?.pips?tp[0].pips+'pts':''}</div>${tpMoney[0]?`<div class="pcard-money" style="background:var(--green-dim);color:var(--green)">+$${tpMoney[0]}</div>`:''}</div><div class="pcard"><div class="pcard-lbl">Stop Loss</div><div class="pcard-val sl">${r.stop_loss?.prix||'—'}</div><div class="pcard-pts">${r.stop_loss?.pips?r.stop_loss.pips+'pts':''}</div>${slMoney?`<div class="pcard-money" style="background:var(--red-dim);color:var(--red)">-$${slMoney}</div>`:''}</div></div>
+    <div class="money-grid"><div class="mcard"><div class="mcard-val" style="color:var(--violet)">$${pipUSD}</div><div class="mcard-lbl">$/pip</div></div><div class="mcard"><div class="mcard-val" style="color:var(--red)">${slMoney?'-$'+slMoney:'—'}</div><div class="mcard-lbl">Perte SL</div></div><div class="mcard"><div class="mcard-val" style="color:var(--green)">${tpMoney[0]?'+$'+tpMoney[0]:'—'}</div><div class="mcard-lbl">Gain TP1</div></div><div class="mcard"><div class="mcard-val" style="color:var(--amber)">$${risk2}</div><div class="mcard-lbl">Risque 2%</div></div></div>
+    <div class="rr-section"><div class="rr-title">Ratio R/R par niveau</div>${tp.map((t,i)=>{const rr=parseFloat(t.rr_calcule)||0;const b=rrBadge(rr);const fill=Math.min(100,(rr/5)*100);const money=tpMoney[i];return`<div class="rr-row"><span class="rr-tag">${t.niveau}</span><div class="rr-track"><div class="rr-fill" style="width:${fill}%;background:${rrColor(rr)}"></div></div><span class="rr-val" style="color:${rrColor(rr)}">${rr.toFixed(1)}:1</span><span class="rr-badge ${b.cls}">${b.label}</span>${money?`<span class="rr-money" style="color:var(--green)">+$${money}</span>`:''}</div>`;}).join('')}<div class="rr-summary"><div class="rrs-item"><div class="rrs-val" style="color:${rrColor(bestRRv)}">${bestRRv}:1</div><div class="rrs-lbl">Meilleur</div></div><div class="rrs-item"><div class="rrs-val" style="color:var(--blue)">${avgRRv}:1</div><div class="rrs-lbl">Moyen</div></div><div class="rrs-item"><div class="rrs-val" style="color:${evPositive?'var(--green)':'var(--red)'}">${evPositive?'+':''} ${ev}x</div><div class="rrs-lbl">Esperance</div></div></div>${minLots!=='—'?`<div style="margin-top:8px;padding:7px 10px;background:var(--blue-dim);border:1px solid rgba(75,140,255,.15);border-radius:7px;font-size:10px;color:var(--blue);font-family:var(--mono)">Lot max pour risque 2% : <strong>${minLots}</strong></div>`:''}</div>
+    <hr class="divider"><div class="section-title">Niveaux Take Profit</div><div class="tp-list">${tpRows}<div class="tp-row sl-row"><span class="tp-lv">SL</span><span class="tp-price red">${r.stop_loss?.prix||'—'}</span><span class="tp-desc">${r.stop_loss?.description||''}</span>${r.stop_loss?.pips?`<span class="tp-pts">${r.stop_loss.pips}pts</span>`:''} ${slMoney?`<span class="tp-usd loss">-$${slMoney}</span>`:''}</div></div>
+    <hr class="divider"><div class="section-title">Indicateurs</div><div class="ind-grid">${indHTML}</div>
+    <hr class="divider"><div class="section-title">Analyse technique</div><div class="abox" style="margin-bottom:12px">${r.analyse||''}</div>
+    <div class="section-title" style="margin-top:12px">Risques</div><div class="abox" style="border-color:rgba(240,61,104,.12);color:var(--soft);margin-bottom:14px">${r.risques||''}</div>
+    <div class="disc">Analyse IA educative uniquement. Pas un conseil financier.</div>
+  </div>`;
+}
+
+// ── INIT ──
+initForms();
+</script>
+</body>
+</html>
